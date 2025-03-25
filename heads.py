@@ -185,6 +185,6 @@ class Heads:
         else:
         	answer,sources=self.drafting(prompt, history, check['data'], k)
         	doc1=self.create_docx(answer['answer'])
-        	answer1=[{'type':'paragraph','data':'Successfully created heads of arguments'},{'type':'document','data':doc1}]
+        	answer1={'answer':[{'type':'paragraph','data':'Successfully created heads of arguments'},{'type':'document','data':doc1}]}
         	answer2=json.dumps(answer1)
         	return answer2,sources
