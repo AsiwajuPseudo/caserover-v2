@@ -379,8 +379,9 @@ def run_playground():
   add = database.add_message(chat, user, str(answer), prompt)
   messages = database.messages(chat)
   chats = database.chats(user)
+  warning="You can pay for premium subscription to use assist"
 
-  return {"messages": messages, "chats": chats, "current": chat,'ads':ad}
+  return {"messages": messages, "chats": chats, "current": chat,'ads':ad,'warning':warning}
 
 #playground
 @app.route('/assist', methods=['POST'])
