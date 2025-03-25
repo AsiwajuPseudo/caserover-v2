@@ -109,14 +109,14 @@ class Heads:
     def research(self, question, source):
         document = self.open_file(source['file_id'], source['filename'], source['table'], source['table_id'])
         text = '\n'.join(t['text'] for t in document)
-        splitter = TokenTextSplitter(chunk_size=125000, chunk_overlap=200)
+        splitter = TokenTextSplitter(chunk_size=114000, chunk_overlap=200)
         chunks = splitter.split_text(text)
         answers = ''
         for chunk in chunks:
             context = f"Research topic (Question): {question}\n\n\n Document Name(Citation): {source['citation']}\nDocument/ Part of Document: {chunk}"
             messages = [{"role": "system", "content": self.researcher}]
             messages.append({"role": "user", "content": context})
-            answers += '\n' + self.gpt.gpt_4o(messages, 15000)
+            answers += '\n' + self.gpt.gpt_4o(messages, 12000)
         return answers
 
     def drafting(self, prompt, history, phrases, k):
