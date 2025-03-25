@@ -483,7 +483,7 @@ def get_pdf():
 
 @app.route('/get_created_file', methods=['GET'])
 def get_created_pdf():
-  filename=request.args.get('fileman')
+  filename=request.args.get('filename')
   file_path='../documents_created/'+filename
   if File_Control.check_path(file_path):
     return send_file(file_path, as_attachment=False)
