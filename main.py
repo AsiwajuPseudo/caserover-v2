@@ -481,6 +481,15 @@ def get_pdf():
   else:
     return jsonify({'error': 'Document does not exist'}), 400
 
+@app.route('/get_created_file', methods=['GET'])
+def get_created_pdf():
+  filename=request.args.get('fileman')
+  file_path='../documents_created/'+filename
+  if File_Control.check_path(file_path):
+    return send_file(file_path, as_attachment=False)
+  else:
+    return jsonify({'error': 'Document does not exist'}), 400
+
 
 #--------------------------------------------------EDITOR MODE METHODS
 
