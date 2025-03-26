@@ -17,6 +17,7 @@ from collector import Collector
 from process import Process
 from euclid import Euclid
 from graph import Graph
+from tools import Tools
 from assist import Assist
 from rag import RAG
 from ads import Ads
@@ -379,9 +380,8 @@ def run_playground():
   add = database.add_message(chat, user, str(answer), prompt)
   messages = database.messages(chat)
   chats = database.chats(user)
-  warning="You can pay for premium subscription to use assist"
 
-  return {"messages": messages, "chats": chats, "current": chat,'ads':ad,'warning':warning}
+  return {"messages": messages, "chats": chats, "current": chat,'ads':ad}
 
 #playground
 @app.route('/assist', methods=['POST'])
@@ -398,6 +398,12 @@ def run_assist():
     name = rag.naming(prompt)
     add = database.add_chat(user, name)
     chat = add['chat']
+  #check for billing
+  billing=database.billing(user)
+  if billing['status']!='success':
+    messages = database.messages(chat)
+    chats = database.chats(user)
+    return {"messages": messages, "chats": chats, "current": chat,"warning":billing['status']}
   # Execute
   try:
     history = database.messages(chat)

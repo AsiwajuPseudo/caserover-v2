@@ -421,13 +421,7 @@ class Database:
                 user = cursor.fetchone()
                 if user:
                     user_id = user[0]
-                    next_billing_date = user[8]  # Assuming the next_billing_date is at the 7th index
-                    current_date = datetime.now().date()
-                    # Check if current date is before the next billing date
-                    if current_date < datetime.strptime(next_billing_date, "%Y-%m-%d").date():
-                        return {"status": "success", "user": user_id}
-                    else:
-                        return {"status": "billing required"}
+                    return {"status": "success", "user": user_id}
                 else:
                     return {"status": "Incorrect password"}
         except Exception as e:
@@ -500,6 +494,26 @@ class Database:
                 cursor.execute("UPDATE users SET next_date=?, status='Subscribed' WHERE code=?", (next_date, code))
                 conn.commit()
                 return {'status':'success'}
+        except Exception as e:
+            return {"status": "Error: " + str(e)}
+
+    def billing(self, user_id):
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                #check if email is valid
+                cursor.execute("SELECT * FROM users WHERE user_id=?", (user_id,))
+                user = cursor.fetchone()
+                if user:
+                    next_billing_date = user[8]  # Assuming the next_billing_date is at the 7th index
+                    current_date = datetime.now().date()
+                    # Check if current date is before the next billing date
+                    if current_date < datetime.strptime(next_billing_date, "%Y-%m-%d").date():
+                        return {"status": "success"}
+                    else:
+                        return {"status": "Subscription required, contact our sales at sales@caserover.co.zw"}
+                else:
+                    return {"status": "Account does not exist"}
         except Exception as e:
             return {"status": "Error: " + str(e)}
 
