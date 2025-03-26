@@ -101,7 +101,7 @@ class Database:
                 admin = cursor.fetchone()
                 if admin:
                     admin_id = admin[0]
-                    return {"status": "success","admin":admin_id}
+                    return {"status": "success","admin_id":admin_id}
                 else:
                     return {"status": "Invalid email or password"}
         except Exception as e:
@@ -267,6 +267,18 @@ class Database:
         except Exception as e:
             return {"status":"Error: " + str(e)}
         
+    def get_isadmin(self, user_id):
+        """Fetches isadmin status of a user"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT isadmin FROM users WHERE user_id=?", (user_id,))
+                result = cursor.fetchone()
+                return result[0] if result else "false"
+        except Exception as e:
+            print("Error fetching isadmin status:", e)
+            return "false"
+    
     # Admin register user using code
     def admin_add_user(self, admin_id, name, email, phone, password):
         try:
