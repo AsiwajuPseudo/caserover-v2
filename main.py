@@ -20,6 +20,7 @@ from graph import Graph
 from assist import Assist
 from rag import RAG
 from ads import Ads
+from auth import auth
 
 database=Database()
 collections=Euclid()
@@ -44,8 +45,14 @@ def login():
     data = request.get_json()
     email = data.get('email')
     password = data.get('password')
-    log = database.login(email, password)
-    return log
+    
+    user = database.login(email, password)
+    if user.get("status") == "success":
+      user_id = user.get("user")
+      isadmin = database.get_isadmin(user_id)
+      token = auth.generate_token(user_id, isadmin)
+      return {"status": "success", "user": user_id, "token": token}
+    return user
 
 #Editor login to account
 @app.route('/editorlogin', methods=['POST'])
@@ -63,7 +70,16 @@ def superuser_login():
     email = data.get('email')
     password = data.get('password')
     result = database.superuser_login(email, password)
+    
+    if result.get("status") == "success":
+      admin_id = result.get("admin_id")
+      if admin_id is None:
+        return {"status": "Error: Superuser login failed. Admin ID is missing"}, 400
+      token = auth.generate_token(None, False, admin_id)
+      return {"status": "success", "admin_id": admin_id, "token": token}
+    
     return result
+    
 
 # Add new superuser
 @app.route('/add_superuser', methods=['POST'])
