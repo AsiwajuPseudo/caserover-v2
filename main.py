@@ -38,6 +38,24 @@ CORS(app)
 @app.route('/ping', methods=['GET'])
 def ping():
     return {'status': 'running'}
+  
+# Register a new account
+@app.route('/register', methods=['POST'])
+def register():
+    data = request.get_json()
+    name = data.get('name')
+    email = data.get('email')
+    user_type = data.get('user_type')
+    code = "00000"
+    password = data.get('password')
+    phone = data.get('phone')
+    lawfirm_name="individual"
+    isadmin = 'false'
+    if user_type=="org":
+        lawfirm_name = data.get('lawfirm_name')
+        isadmin ='true'
+    result = database.add_user(name, email, phone, user_type, code, lawfirm_name, password, isadmin)
+    return result
 
 # Login to account
 @app.route('/login', methods=['POST'])
@@ -83,9 +101,11 @@ def superuser_login():
 
 # Add new superuser
 @app.route('/add_superuser', methods=['POST'])
-def add_superuser():
+@auth.jwt_required(required_role="superuser") # Added decorator
+def add_superuser(decoded_token): # Added decoded_token parameter
     data = request.get_json()
-    admin_id = data.get('admin_id')
+    # admin_id = data.get('admin_id') Removed manual admin_id(it's now handled by decorator)
+    admin_id = decoded_token.get("admin_id")
     name = data.get('name')
     email = data.get('email')
     password = data.get('password')
@@ -94,9 +114,10 @@ def add_superuser():
 
 # Change superuser password
 @app.route('/change_superuser_password', methods=['POST'])
-def change_superuser_password():
+@auth.jwt_required(required_role="superuser")
+def change_superuser_password(decoded_token):
     data = request.get_json()
-    admin_id = data.get('admin_id')
+    admin_id = decoded_token.get['admin_id']
     old_password = data.get('old_password')
     new_password = data.get('new_password')
     result = database.change_superuser_password(admin_id, old_password, new_password)
@@ -104,49 +125,33 @@ def change_superuser_password():
 
 # Get all superusers
 @app.route('/get_superusers', methods=['GET'])
-def get_superusers():
-    admin_id = request.args.get('admin_id')
+@auth.jwt_required(required_role="superuser")
+def get_superusers(decoded_token):
+    admin_id = decoded_token.get['admin_id']
     result = database.get_superusers(admin_id)
     return result
 
 # Delete a superuser
 @app.route('/delete_superuser', methods=['DELETE'])
-def delete_superuser():
+@auth.jwt_required(required_role="superuser")
+def delete_superuser(decoded_token):
     data = request.get_json()
     admin_id = data.get('admin_id')
     admin_id_to_delete_id = data.get('admin_id_to_delete')
     
-    admin_check = database.get_superusers(admin_id)
-    if admin_check.get("status") != "success":
-      return {'status': 'Unauthorized access!'}, 403
-    
     result = database.delete_superuser(admin_id, admin_id_to_delete_id)
     return result
 
-# Register a new account
-@app.route('/register', methods=['POST'])
-def register():
-    data = request.get_json()
-    name = data.get('name')
-    email = data.get('email')
-    user_type = data.get('user_type')
-    code = "00000"
-    password = data.get('password')
-    phone = data.get('phone')
-    lawfirm_name="individual"
-    isadmin = 'false'
-    if user_type=="org":
-        lawfirm_name = data.get('lawfirm_name')
-        isadmin ='true'
-    result = database.add_user(name, email, phone, user_type, code, lawfirm_name, password, isadmin)
-    return result
 
 
 # Change Password
 @app.route('/password', methods=['POST'])
-def change_password():
+@auth.jwt_required()
+def change_password(decoded_token):
   data = request.get_json()
   user_id = data.get('user_id')
+  if decoded_token["user_id"] != user_id:
+    return {'status': 'Unauthorized access!'}, 403
   old_password = data.get('old_password')
   new_password = data.get('new_password')
   
@@ -159,35 +164,41 @@ def change_password():
 
 #view user profile
 @app.route('/user_profile', methods=['GET'])
-def view_user_profile():
+@auth.jwt_required()
+def view_user_profile(decoded_token):
   user_id = request.args.get('user_id')
+  
+  if user_id != decoded_token["user_id"] and decoded_token.get("isadmin") != "true":
+    return {'status': 'Unauthorized access!'}, 403
   profile = database.user_profile(user_id)
   return profile
 
 #view all users profile (superusers only)
 @app.route('/allusers', methods=['GET'])
-def view_all_profiles():
-  admin_id = request.args.get('admin_id')
+@auth.jwt_required(required_role="superuser")
+def view_all_profiles(decoded_token):
+  admin_id = decoded_token['admin_id']
   
-  admin_check = database.get_superusers(admin_id)
-  if admin_check.get("status") != "success":
-    return {"status": "Unauthorized access!"}, 403
+  # admin_check = database.get_superusers(admin_id)
+  # if admin_check.get("status") != "success":
+  #   return {"status": "Unauthorized access!"}, 403
   
   users = database.profiles()
   return {'users': users}
 
 # Subscribe a user
 @app.route('/subscribe_user', methods=['POST'])
-def subscribe_user():
+@auth.jwt_required(required_role="superuser")
+def subscribe_user(decoded_token):
   data = request.get_json()
   user_id=data.get('user_id')
-  admin_id=data.get('admin_id')
+  admin_id=decoded_token.get('admin_id')
   next_date=data.get('next_date')
   
-      # Ensure requester is a superuser
-  superuser_check = database.get_superusers(admin_id)
-  if superuser_check.get("status") != "success":
-      return {"status": "Unauthorized access! Superusers only."}, 403
+      # Ensure requester is a superuser(now handled by decorator)
+  # superuser_check = database.get_superusers(admin_id)
+  # if superuser_check.get("status") != "success":
+  #     return {"status": "Unauthorized access! Superusers only."}, 403
     
   update=database.subscribe_user(admin_id, user_id, next_date)
   users=database.profiles()
@@ -195,16 +206,17 @@ def subscribe_user():
 
 # Subscribe an organisation
 @app.route('/subscribe_org', methods=['POST'])
-def subscribe_orginisation():
+@auth.jwt_required(required_role="superuser")
+def subscribe_orginisation(decoded_token):
   data = request.get_json()
-  admin_id=data.get('admin_id')
+  admin_id=decoded_token.get('admin_id')
   code = data.get('code')
   next_date=data.get('next_date')
   
-  # Ensure requester is a superuser
-  superuser_check = database.get_superusers(admin_id)
-  if superuser_check.get("status") != "success":
-      return {"status": "Unauthorized access! Superusers only."}, 403
+  # # Ensure requester is a superuser
+  # superuser_check = database.get_superusers(admin_id)
+  # if superuser_check.get("status") != "success":
+  #     return {"status": "Unauthorized access! Superusers only."}, 403
     
   update=database.subscribe_org(admin_id, code,next_date)
   users=database.profiles()
@@ -212,13 +224,14 @@ def subscribe_orginisation():
 
 # Delete a user profile
 @app.route('/delete_user', methods=['DELETE'])
-def delete_profile():
-  admin_id = request.args.get('admin_id') # Superuser ID
+@auth.jwt_required(required_role="superuser")
+def delete_profile(decoded_token):
+  admin_id = decoded_token.get('admin_id') # Superuser ID
   user_id=request.args.get('user_id')
   
-  superuser_check = database.get_superusers(admin_id)
-  if superuser_check.get("status") != "success":
-    return {"status": "Unauthorized access! Superusers only."}, 403
+  # superuser_check = database.get_superusers(admin_id)
+  # if superuser_check.get("status") != "success":
+  #   return {"status": "Unauthorized access! Superusers only."}, 403
   
   op = database.delete_user(admin_id, user_id)
   users=database.profiles()
@@ -226,20 +239,19 @@ def delete_profile():
 
 
 @app.route('/user_usage', methods=['GET'])
-def get_user_usage():
+@auth.jwt_required()
+def get_user_usage(decoded_token):
   user_id = request.args.get('user_id')
+  if user_id != decoded_token["user_id"] and decoded_token.get("isadmin") != "true":
+    return jsonify ({'status': 'Unauthorized access!'}), 403
   result = database.get_user_usage(user_id)
   return result
 
 @app.route('/all_users_usage', methods=['GET'])
-def get_all_users_usage():
-  admin_id = request.args.get('admin_id')
+@auth.jwt_required(required_role="superuser")
+def get_all_users_usage(decoded_token):
   
-  superuser_check = database.get_superusers(admin_id)
-  if superuser_check.get("status") != "success":
-    return {"status": "Unauthorized access!"}, 403
-  
-  result = database.get_all_users_usage(admin_id)
+  result = database.get_all_users_usage(decoded_token["admin_id"])
   return result
 
 #---------------------------------------------------------------------------------------------------------------
@@ -248,9 +260,10 @@ def get_all_users_usage():
 
 # Admin adds a new user to their lawfirm
 @app.route('/admin_add_user', methods=['POST'])
-def admin_add_user():
+@auth.jwt_required(required_role="org_admin") # Added decorator
+def admin_add_user(decoded_token):
     data = request.get_json()
-    admin_id = data.get('admin_id')
+    admin_id = decoded_token['admin_id']
     name = data.get('name')
     email = data.get('email')
     phone = data.get('phone')
@@ -267,9 +280,10 @@ def admin_add_user():
     
 # Admin deletes a user from their lawfirm
 @app.route('/admin_delete_user', methods=['DELETE'])
-def admin_delete_user():
+@auth.jwt_required(required_role="org_admin")
+def admin_delete_user(decoded_token):
     data = request.get_json()
-    admin_id = data.get('admin_id')
+    admin_id = decoded_token.get('admin_id')
     user_id_to_delete = data.get('user_id')
     
     delete = database.admin_delete_user(admin_id, user_id_to_delete)
@@ -282,17 +296,19 @@ def admin_delete_user():
     
 # Admin views all users in their lawfirm
 @app.route('/org_users', methods=['GET'])
-def get_org_users():
-    admin_id = request.args.get('admin_id')
+@auth.jwt_required(required_role="org_admin")
+def get_org_users(decoded_token):
+    admin_id = decoded_token.get('admin_id')
     result = database.get_org_users(admin_id)
     results=[item for item in result['users'] if item['user_id']!=admin_id]
     return results
     
 # Admin updates a user's status in their lawfirm
 @app.route('/admin_update_user_status', methods=['PATCH'])
-def admin_update_user_status():
+@auth.jwt_required(required_role="org_admin")
+def admin_update_user_status(decoded_token):
     data = request.get_json()
-    admin_id = data.get('admin_id')
+    admin_id = decoded_token['admin_id']
     user_id = data.get('user_id')
     new_status = data.get('status')
     

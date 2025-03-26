@@ -5,6 +5,8 @@ from flask import request, jsonify
 from dotenv import load_dotenv
 import sqlite3
 import uuid
+from functools import wraps
+from flask import request, jsonify
 
 load_dotenv()
 
@@ -67,5 +69,27 @@ class Auth:
         except Exception as e:
             print("Org admin check error:", e)
             return False
+        
+    def jwt_required(self, required_role=None):
+        """Decorator to secure API endpoints and enforce RBAC"""
+        def decorator(func):
+            @wraps(func)
+            def wrapper(*args, **kwargs):
+                decoded_token, error_response, status_code = self.verify_token()
+                if error_response:
+                    return jsonify(error_response), status_code
+                
+                # Role based access control
+                if required_role == "superuser" and not self.is_superuser(decoded_token.get("admin_id")):
+                    return jsonify({"status": "Unauthorized access! Superusers only."}), 403
+                
+                if required_role == "org_admin" and decoded_token.get ("isadmin") != "true":
+                    return jsonify({"status": "Unauthorized access! Organization admins only."}), 403
+                
+                # If no specific role is required, proceed with the request
+                return func(decoded_token, *args, **kwargs)
+            
+            return wrapper
+        return decorator
 
 auth = Auth()               
