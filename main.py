@@ -559,6 +559,11 @@ def tables():
   #check if tables object exist
   if File_Control.check_path('../tables/') and File_Control.check_path('../tables/root.pkl'):
     tables=File_Control.open('../tables/root.pkl')
+    if len(tables)>0:
+      files=File_Control.open('../tables/files.pkl')
+      for table in tables:
+        processed_files=[item for item in files if item['table']==table['name']]
+        table['count']=len(processed_files)
   else:
     #create folder
     File_Control.create_path('../tables/')
