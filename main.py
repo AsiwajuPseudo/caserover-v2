@@ -470,8 +470,7 @@ def run_assist(decoded_token):
 
 #upload files for GPT
 @app.route('/cloudupload', methods=['POST'])
-@auth.jwt_required()
-def upload_files_gpt(decoded_token):
+def upload_files_gpt():
   chat = request.form.get('chat_id')
   transcript=[]
   files = request.files.getlist('files')
@@ -524,8 +523,7 @@ def get_source():
 
 
 @app.route('/get_file', methods=['GET'])
-@auth.jwt_required()
-def get_pdf(decoded_token):
+def get_pdf():
   file_id=request.args.get('file_id')
   filename=request.args.get('filename')
   table_id=request.args.get('table_id')
@@ -537,8 +535,7 @@ def get_pdf(decoded_token):
     return jsonify({'error': 'Document does not exist'}), 400
 
 @app.route('/get_created_file', methods=['GET'])
-@auth.jwt_required()
-def get_created_pdf(decoded_token):
+def get_created_pdf():
   filename=request.args.get('filename')
   file_path='../documents_created/'+filename
   if File_Control.check_path(file_path):
