@@ -23,7 +23,7 @@ class Auth:
             "user_id": user_id,
             "isadmin": isadmin, # "true" or "false"
             "admin_id": admin_id,
-            "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=1),  # Token expires in 15 days
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(days=15),  # Token expires in 15 days
         }
         return jwt.encode(payload, self.secret_key, algorithm="HS256")
 

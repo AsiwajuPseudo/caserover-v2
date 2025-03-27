@@ -498,8 +498,7 @@ def upload_files_gpt(decoded_token):
   return {"status":"success",'nodes':nodes}
 
 @app.route('/source', methods=['GET'])
-@auth.jwt_required()
-def get_source(decoded_token):
+def get_source():
   tool=request.args.get('tool')
   name=request.args.get('name')
   if tool=="assistant":
@@ -814,8 +813,7 @@ def load_all_processed_files():
 
 #save a file for viewing later
 @app.route('/save_file', methods=['POST'])
-@auth.jwt_required()
-def save_file_as_bookmark(decoded_token):
+def save_file_as_bookmark():
   data = request.get_json()
   user_id=data.get('user_id')
   file_id=data.get('file_id')
@@ -841,10 +839,9 @@ def load_saved_files():
 
 #delete a file saved for viewing later
 @app.route('/delete_saved_file', methods=['POST'])
-@auth.jwt_required()
-def delete_saved_file(decoded_token):
+def delete_saved_file():
   data = request.get_json()
-  user_id=decoded_token['user_id']
+  user_id=data.get('user_id')
   file_id=data.get('file_id')
   deli=database.deli_saved(user_id, file_id)
 
