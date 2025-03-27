@@ -23,7 +23,7 @@ class Auth:
             "user_id": user_id,
             "isadmin": isadmin, # "true" or "false"
             "admin_id": admin_id,
-            "exp": datetime.datetime.utcnow() + datetime.timedelta(days=15),  # Token expires in 15 days
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=1),  # Token expires in 15 days
         }
         return jwt.encode(payload, self.secret_key, algorithm="HS256")
 
@@ -39,7 +39,7 @@ class Auth:
             decoded = jwt.decode(token, self.secret_key, algorithms=["HS256"])
             return decoded, None, 200
         except jwt.ExpiredSignatureError:
-            return None, {"status": "Token expired, please log in again"}, 401
+            return None, {"status": "Token expired, please log in again"}, 498
         except jwt.InvalidTokenError:
             return None, {"status": "Invalid token, please log in again"}, 401
         
