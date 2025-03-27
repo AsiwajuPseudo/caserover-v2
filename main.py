@@ -51,10 +51,18 @@ def register():
     phone = data.get('phone')
     lawfirm_name="individual"
     isadmin = 'false'
+
     if user_type=="org":
         lawfirm_name = data.get('lawfirm_name')
         isadmin ='true'
     result = database.add_user(name, email, phone, user_type, code, lawfirm_name, password, isadmin)
+    
+    # If user resgistration is successfull, generate a token
+    if result.get("status") == "success":
+      user_id = result.get("user")
+      token = auth.generate_token(user_id, isadmin)
+      return{"status": "success", "user": user_id, "token": token}
+    
     return result
 
 # Login to account
@@ -117,7 +125,7 @@ def add_superuser(decoded_token): # Added decoded_token parameter
 @auth.jwt_required(required_role="superuser")
 def change_superuser_password(decoded_token):
     data = request.get_json()
-    admin_id = decoded_token.get['admin_id']
+    admin_id = decoded_token['admin_id']
     old_password = data.get('old_password')
     new_password = data.get('new_password')
     result = database.change_superuser_password(admin_id, old_password, new_password)
@@ -127,7 +135,7 @@ def change_superuser_password(decoded_token):
 @app.route('/get_superusers', methods=['GET'])
 @auth.jwt_required(required_role="superuser")
 def get_superusers(decoded_token):
-    admin_id = decoded_token.get['admin_id']
+    admin_id = decoded_token["admin_id"]
     result = database.get_superusers(admin_id)
     return result
 
@@ -136,7 +144,7 @@ def get_superusers(decoded_token):
 @auth.jwt_required(required_role="superuser")
 def delete_superuser(decoded_token):
     data = request.get_json()
-    admin_id = data.get('admin_id')
+    admin_id = decoded_token['admin_id']
     admin_id_to_delete_id = data.get('admin_id_to_delete')
     
     result = database.delete_superuser(admin_id, admin_id_to_delete_id)
@@ -149,7 +157,7 @@ def delete_superuser(decoded_token):
 @auth.jwt_required()
 def change_password(decoded_token):
   data = request.get_json()
-  user_id = data.get('user_id')
+  user_id = decoded_token['user_id']
   if decoded_token["user_id"] != user_id:
     return {'status': 'Unauthorized access!'}, 403
   old_password = data.get('old_password')
@@ -338,19 +346,22 @@ def admin_update_user_status(decoded_token):
 
 #add a chat
 @app.route('/add_chat', methods=['POST'])
-def add_chat():
+@auth.jwt_required()
+def add_chat(decoded_token):
   data = request.get_json()
   name=data.get('name')
-  user=data.get('user_id')
-  add=database.add_chat(user,name)
+  user = decoded_token["user_id"]
+  add=database.add_chat(user, name)
   chats=database.chats(user)
   return {"status":add,"chats":chats}
 
 #delete a chat
 @app.route('/deli_chat', methods=['GET'])
-def deli_chat():
+@auth.jwt_required()
+def deli_chat(decoded_token):
   chat=request.args.get('chat_id')
-  user=request.args.get('user_id')
+  # user=request.args.get('user_id')
+  user = decoded_token["user_id"]
   deli=database.deli_chat(chat)
   chats=database.chats(user)
 
@@ -358,8 +369,9 @@ def deli_chat():
 
 #retrieve all chats belonging to a user
 @app.route('/chats', methods=['GET'])
-def collect_chats():
-  user=request.args.get('user_id')
+@auth.jwt_required()
+def collect_chats(decoded_token):
+  user=decoded_token['user_id']
   chats=database.chats(user)
   tables=collections.tables()
   table_data=[]
@@ -371,7 +383,8 @@ def collect_chats():
 
 #retrieve all chats belonging to a user
 @app.route('/messages', methods=['GET'])
-def collect_messages():
+@auth.jwt_required()
+def collect_messages(decoded_token):
   chat=request.args.get('chat_id')
   messages=database.messages(chat)
 
@@ -379,10 +392,11 @@ def collect_messages():
 
 #playground
 @app.route('/play', methods=['POST'])
-def run_playground():
+@auth.jwt_required()
+def run_playground(decoded_token):
   data = request.get_json()
   chat = data.get('chat_id')
-  user = data.get('user_id')
+  user = decoded_token['user_id']
   prompt = data.get('prompt')
   tool = data.get('tool')
   rag= RAG(collections)
@@ -417,10 +431,11 @@ def run_playground():
 
 #playground
 @app.route('/assist', methods=['POST'])
-def run_assist():
+@auth.jwt_required()
+def run_assist(decoded_token):
   data = request.get_json()
   chat = data.get('chat_id')
-  user = data.get('user_id')
+  user = decoded_token['user_id']
   prompt = data.get('prompt')
   table = data.get('tool')
   assist=Assist(collections)
@@ -450,7 +465,8 @@ def run_assist():
 
 #upload files for GPT
 @app.route('/cloudupload', methods=['POST'])
-def upload_files_gpt():
+@auth.jwt_required()
+def upload_files_gpt(decoded_token):
   chat = request.form.get('chat_id')
   transcript=[]
   files = request.files.getlist('files')
@@ -482,7 +498,8 @@ def upload_files_gpt():
   return {"status":"success",'nodes':nodes}
 
 @app.route('/source', methods=['GET'])
-def get_source():
+@auth.jwt_required()
+def get_source(decoded_token):
   tool=request.args.get('tool')
   name=request.args.get('name')
   if tool=="assistant":
@@ -503,7 +520,8 @@ def get_source():
 
 
 @app.route('/get_file', methods=['GET'])
-def get_pdf():
+@auth.jwt_required()
+def get_pdf(decoded_token):
   file_id=request.args.get('file_id')
   filename=request.args.get('filename')
   table_id=request.args.get('table_id')
@@ -515,7 +533,8 @@ def get_pdf():
     return jsonify({'error': 'Document does not exist'}), 400
 
 @app.route('/get_created_file', methods=['GET'])
-def get_created_pdf():
+@auth.jwt_required()
+def get_created_pdf(decoded_token):
   filename=request.args.get('filename')
   file_path='../documents_created/'+filename
   if File_Control.check_path(file_path):
@@ -795,7 +814,8 @@ def load_all_processed_files():
 
 #save a file for viewing later
 @app.route('/save_file', methods=['POST'])
-def save_file_as_bookmark():
+@auth.jwt_required()
+def save_file_as_bookmark(decoded_token):
   data = request.get_json()
   user_id=data.get('user_id')
   file_id=data.get('file_id')
@@ -821,9 +841,10 @@ def load_saved_files():
 
 #delete a file saved for viewing later
 @app.route('/delete_saved_file', methods=['POST'])
-def delete_saved_file():
+@auth.jwt_required()
+def delete_saved_file(decoded_token):
   data = request.get_json()
-  user_id=data.get('user_id')
+  user_id=decoded_token['user_id']
   file_id=data.get('file_id')
   deli=database.deli_saved(user_id, file_id)
 
