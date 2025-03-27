@@ -9,6 +9,8 @@ import csv
 import io
 import os
 from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 #local libraries
 from database import Database
@@ -28,6 +30,19 @@ collections=Euclid()
 app = Flask(__name__)
 CORS(app)
 
+# Rate limiting config
+limiter = Limiter(
+  app = app,
+  key_func = get_remote_address, # Track by IP
+  default_limits=["200 per minuite", "50 per second"] # Global limits
+)
+
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    return jsonify({
+        "status": "error",
+        "message": "Too many requests. Please try again later."
+    }), 429
 
 
 
@@ -41,6 +56,7 @@ def ping():
   
 # Register a new account
 @app.route('/register', methods=['POST'])
+@limiter.limit("5 per minute")
 def register():
     data = request.get_json()
     name = data.get('name')
@@ -67,6 +83,7 @@ def register():
 
 # Login to account
 @app.route('/login', methods=['POST'])
+@limiter.limit("10 per minute")
 def login():
     data = request.get_json()
     email = data.get('email')
@@ -144,6 +161,7 @@ def delete_superuser():
 
 # Change Password
 @app.route('/password', methods=['POST'])
+@limiter.limit("5 per minute")
 @auth.jwt_required()
 def change_password(decoded_token):
   data = request.get_json()
@@ -377,6 +395,7 @@ def collect_messages(decoded_token):
 
 #playground
 @app.route('/play', methods=['POST'])
+@limiter.limit("30 per minute")
 @auth.jwt_required()
 def run_playground(decoded_token):
   data = request.get_json()
@@ -416,6 +435,7 @@ def run_playground(decoded_token):
 
 #playground
 @app.route('/assist', methods=['POST'])
+@limiter.limit("30 per minute")
 @auth.jwt_required()
 def run_assist(decoded_token):
   data = request.get_json()
@@ -456,8 +476,7 @@ def run_assist(decoded_token):
 
 #upload files for GPT
 @app.route('/cloudupload', methods=['POST'])
-@auth.jwt_required()
-def upload_files_gpt(decoded_token):
+def upload_files_gpt():
   chat = request.form.get('chat_id')
   transcript=[]
   files = request.files.getlist('files')
@@ -510,8 +529,7 @@ def get_source():
 
 
 @app.route('/get_file', methods=['GET'])
-@auth.jwt_required()
-def get_pdf(decoded_token):
+def get_pdf():
   file_id=request.args.get('file_id')
   filename=request.args.get('filename')
   table_id=request.args.get('table_id')
@@ -523,8 +541,7 @@ def get_pdf(decoded_token):
     return jsonify({'error': 'Document does not exist'}), 400
 
 @app.route('/get_created_file', methods=['GET'])
-@auth.jwt_required()
-def get_created_pdf(decoded_token):
+def get_created_pdf():
   filename=request.args.get('filename')
   file_path='../documents_created/'+filename
   if File_Control.check_path(file_path):
