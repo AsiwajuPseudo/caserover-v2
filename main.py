@@ -416,7 +416,7 @@ def run_playground(decoded_token):
     history = database.messages(chat)
     answer, sources = rag.single_step(tool, prompt, history, 3, 3)
     ads=Ads()
-    #ad=ads.random_advertiser()
+    ad=ads.random_advertiser()
     ad={}
   except Exception as e:
     traceback.print_exc()
