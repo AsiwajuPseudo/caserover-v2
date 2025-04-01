@@ -82,12 +82,13 @@ class RAG:
         self.phrases="""
         You are part of an AI agent used for legal research in Zimbabwe. The user asks questions and the agent is required to
         do a cosine similarity search in a vector database. However, sometimes the user's questions are not enough to generate
-        accurate results from the vector search. Using the user's question (request) and the history in the chat as context,
-        create search phrases that are necessary for an accurate cosine search in the vector database containing case law or
-        legislations. You should return in json format of structure {'phrases':[...list of phrases]}. Your phrases should be able
-        to return accurate result hence they should relevant to what the user is researching, should consider the table being searched
-        and they should be specific. The number of phrases to return and the name of vector database table to be searched is specified
-        at the start of the user's question.
+        accurate results from the vector search. Using the user's question (request), provided list of tables and the history in
+        the chat as context, create search phrases that are necessary for an accurate cosine search in a specific table from the
+        vector database. You should return in json format of structure {'phrases':[...list of phrases]}. The phrases should each be
+        of structure {'phrase': the search phrase,'table':the exact name of the table to search from}. Your phrases should be able
+        to return accurate result hence they should be very relevant to what the user is researching, should consider the table being
+        searched and should be very specific. The number of phrases to return and the names of vector database tables available is
+        specified at the start of the user's question.
         """
 
     # a tool for generating a chat name
@@ -112,12 +113,12 @@ class RAG:
         answer1=json.dumps(answer)
         return answer1, []
 
-    def phraser(self, prompt, history, table, scope):
+    def phraser(self, prompt, history, tables, scope):
         messages = [{"role": "system", "content": self.phrases}]
         for message in history:
             messages.append({"role": "user", "content": message['user']})
             messages.append({"role": "assistant", "content": str(message['system'])})
-        messages.append({"role": "user", "content": 'Table to be searched: '+ table +', Number of phrases needed: ' +str(scope)+ '. User question: '+ prompt})
+        messages.append({"role": "user", "content": 'Tables available: '+ tables +', Number of phrases needed: ' +str(scope)+ '. User question: '+ prompt})
         answ = self.gpt.json_gpt(messages, 4060)
         answer=json.loads(answ)
         return answer['phrases']
@@ -136,13 +137,13 @@ class RAG:
         sources=[{'citation': citation, 'table': item['table'], 'table_id': table_id, 'file_id': file_id, 'filename': filename, 'document':document} for citation, table, table_id, file_id, filename, document in unique_docs]
         return sources
 
-    def single_step(self, table, prompt, history,k=3, scope=1):
+    def single_step(self, prompt, history,k=3, scope=1):
         #first generate phrases
-        phrases=self.phraser(prompt, history, table, scope)
+        phrases=self.phraser(prompt, history, str(self.euclid.tables()), scope)
         raw_sources=[]
         for phrase in phrases:
             #search from phrases
-            raw_sources.extend(self.euclid.search(table, phrase, k))
+            raw_sources.extend(self.euclid.search(phrase['table'], phrase['phrase'], k))
 
         #RAG for answer
         sources=self.load_unique_docu(raw_sources)
