@@ -158,6 +158,35 @@ def delete_superuser():
     result = database.delete_superuser(admin_id, admin_id_to_delete_id)
     return result
 
+#retrieve all chats belonging to a user
+@app.route('/chats_super', methods=['GET'])
+def collect_chats_super():
+  user=request.args.get('user_id')
+  admin_id=request.args.get('admin_id')
+  admin_check = database.get_superusers(admin_id)
+  if admin_check.get("status") != "success":
+    return {'status': 'Unauthorized access!'}, 403
+  chats=database.chats(user)
+  tables=collections.tables()
+  table_data=[]
+  tables_list=[]
+  for col in tables:
+    tables_list.append(col)
+
+  return {"chats":chats,"tables":tables_list}
+
+#retrieve all chats belonging to a user
+@app.route('/messages_super', methods=['GET'])
+def collect_messages_super():
+  admin_id=request.args.get('admin_id')
+  admin_check = database.get_superusers(admin_id)
+  if admin_check.get("status") != "success":
+    return {'status': 'Unauthorized access!'}, 403
+  chat=request.args.get('chat_id')
+  messages=database.messages(chat)
+
+  return {"messages":messages}
+
 
 # Change Password
 @app.route('/password', methods=['POST'])
