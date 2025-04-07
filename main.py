@@ -485,7 +485,7 @@ def run_assist(decoded_token):
   # Execute
   try:
     history = database.messages(chat)
-    answer, sources = assist.run(prompt, history, 3, 5)
+    answer, sources = assist.run(prompt, history)
   except Exception as e:
     traceback.print_exc()
     p={"answer":[{"type":"paragraph","data":"Error generating content, please try again. If the error persist create a new workspace."}],"sources":[], "citations":[]}

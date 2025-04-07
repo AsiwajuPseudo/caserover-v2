@@ -31,7 +31,7 @@ class Assist:
         return answer['tool']
 
     # run and select the correct assistant
-    def run(self, table, prompt,history):
+    def run(self, prompt,history):
         tool=self.selector(prompt,history)
         if tool=='Heads':
             heads=Heads(self.euclid)
@@ -40,5 +40,5 @@ class Assist:
             return answer, sources
         else:
             rag=RAG(self.euclid)
-            answer, sources=rag.multi_step(table, prompt, history, 3, 3)
+            answer, sources=rag.multi_step(prompt, history, 3, 5)
             return answer, sources
