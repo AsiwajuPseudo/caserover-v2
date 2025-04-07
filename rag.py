@@ -194,12 +194,12 @@ class RAG:
             answers= answers + '\n' +self.gpt.gpt_4o(messages, 15000)
         return answers
 
-    def multi_step(self, table, prompt, history, k=3, scope=1):
+    def multi_step(self,prompt, history, k=3, scope=3):
         #first generate phrases
-        phrases=self.phraser(prompt, history, table, scope)
+        phrases=self.phraser(prompt, history, str(self.euclid.tables()), scope)
         raw_sources=[]
         for phrase in phrases:
-            raw_sources.extend(self.euclid.search(table, phrase, k))
+            raw_sources.extend(self.euclid.search(phrase['table'], phrase['phrase'], k))
 
         #unique
         sources=self.load_unique(raw_sources)
