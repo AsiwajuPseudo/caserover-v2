@@ -127,14 +127,14 @@ class RAG:
         unique_docs = set()
         for item in data:
             unique_docs.add((item['citation'],item['table'],item['table_id'],item['file_id'],item['filename']))
-        sources=[{'citation': citation, 'table': item['table'], 'table_id': table_id, 'file_id': file_id, 'filename': filename} for citation, table, table_id, file_id, filename in unique_docs]
+        sources=[{'citation': citation, 'table': table, 'table_id': table_id, 'file_id': file_id, 'filename': filename} for citation, table, table_id, file_id, filename in unique_docs]
         return sources
 
     def load_unique_docu(self,data):
         unique_docs = set()
         for item in data:
             unique_docs.add((item['citation'],item['table'],item['table_id'],item['file_id'],item['filename'],item['document']))
-        sources=[{'citation': citation, 'table': item['table'], 'table_id': table_id, 'file_id': file_id, 'filename': filename, 'document':document} for citation, table, table_id, file_id, filename, document in unique_docs]
+        sources=[{'citation': citation, 'table': table, 'table_id': table_id, 'file_id': file_id, 'filename': filename, 'document':document} for citation, table, table_id, file_id, filename, document in unique_docs]
         return sources
 
     def single_step(self, prompt, history,k=3, scope=1):
