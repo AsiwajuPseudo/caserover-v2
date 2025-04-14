@@ -300,10 +300,9 @@ def get_user_usage(decoded_token):
 
 # Admin adds a new user to their lawfirm
 @app.route('/admin_add_user', methods=['POST'])
-@auth.jwt_required(required_role="org_admin") # Added decorator
-def admin_add_user(decoded_token):
+def admin_add_user():
     data = request.get_json()
-    admin_id = decoded_token['admin_id']
+    admin_id = data.get('admin_id')
     name = data.get('name')
     email = data.get('email')
     phone = data.get('phone')
@@ -319,11 +318,10 @@ def admin_add_user(decoded_token):
         return result
     
 # Admin deletes a user from their lawfirm
-@app.route('/admin_delete_user', methods=['DELETE'])
-@auth.jwt_required(required_role="org_admin")
-def admin_delete_user(decoded_token):
+@app.route('/admin_delete_user', methods=['POST'])
+def admin_delete_user():
     data = request.get_json()
-    admin_id = decoded_token.get('admin_id')
+    admin_id = data.get('admin_id')
     user_id_to_delete = data.get('user_id')
     
     delete = database.admin_delete_user(admin_id, user_id_to_delete)
@@ -336,9 +334,8 @@ def admin_delete_user(decoded_token):
     
 # Admin views all users in their lawfirm
 @app.route('/org_users', methods=['GET'])
-@auth.jwt_required(required_role="org_admin")
-def get_org_users(decoded_token):
-    admin_id = decoded_token.get('admin_id')
+def get_org_users():
+    admin_id = request.args.get('admin_id')
     result = database.get_org_users(admin_id)
     results=[item for item in result['users'] if item['user_id']!=admin_id]
     return results
