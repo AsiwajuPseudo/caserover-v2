@@ -13,9 +13,10 @@ class Euclid:
   #list all tables in the database
   def tables(self):
     li=self.handle.list_collections()
-    print(li)
+    co=[coll.name for colle in li]
+    print(co)
 
-    return li
+    return co
 
   #create a new table
   def create_table(self, name,metric="cosine"):
@@ -110,3 +111,4 @@ class Euclid:
       print(str(e))
 
       return 'error'
+
