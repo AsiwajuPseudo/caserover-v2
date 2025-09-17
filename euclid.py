@@ -13,6 +13,7 @@ class Euclid:
   #list all tables in the database
   def tables(self):
     li=self.handle.list_collections()
+    print(li)
 
     return li
 
@@ -107,4 +108,5 @@ class Euclid:
       return 'success'
     except Exception as e:
       print(str(e))
+
       return 'error'
