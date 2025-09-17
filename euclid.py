@@ -14,7 +14,6 @@ class Euclid:
   def tables(self):
     li=self.handle.list_collections()
     co=[colle.name for colle in li]
-    print(co)
 
     return co
 
@@ -111,5 +110,6 @@ class Euclid:
       print(str(e))
 
       return 'error'
+
 
 
